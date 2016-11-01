@@ -210,7 +210,7 @@ class ResourceTest < ActiveSupport::TestCase
   def test_class_relationships
     relationships = FelineResource._relationships
     assert_kind_of(Hash, relationships)
-    assert_equal(relationships.size, 2)
+    assert_equal(relationships.size, 3)
   end
 
   def test_replace_polymorphic_to_one_link

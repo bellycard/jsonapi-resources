@@ -18,6 +18,7 @@ module JSONAPI
     # serialization_options: additional options that will be passed to resource meta and links lambdas
 
     def initialize(primary_resource_klass, options = {})
+      
       @primary_resource_klass = primary_resource_klass
       @primary_class_name     = primary_resource_klass._type
       @fields                 = options.fetch(:fields, {})
@@ -496,6 +497,7 @@ module JSONAPI
     end
 
     def add_resource(source, include_directives, primary = false)
+      
       type = source.is_a?(JSONAPI::CachedResourceFragment) ? source.type : source.class._type
       id = source.id
 

@@ -310,6 +310,19 @@ ActiveRecord::Schema.define do
     t.string :name
   end
 
+  create_table :painters, force: true do |t|
+    t.string :name
+
+    t.timestamps null: false
+  end
+
+  create_table :paintings, force: true do |t|
+    t.string :title
+    t.string :category
+    t.belongs_to :painter
+
+    t.timestamps null: false
+  end
   # special cases
 end
 
@@ -654,6 +667,13 @@ module Api
   end
 end
 
+class Painter < ActiveRecord::Base
+  has_many :paintings
+end
+
+class Painting < ActiveRecord::Base
+  belongs_to :painter
+end
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
@@ -863,6 +883,9 @@ module Api
     end
 
     class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+
+    class PaintersController < JSONAPI::ResourceController
     end
   end
 
@@ -1599,6 +1622,26 @@ module Api
 
     class AuthorDetailResource < JSONAPI::Resource
       attributes :author_stuff
+    end
+
+    class PaintingResource < JSONAPI::Resource
+      model_name 'Painting'
+      attributes :title, :category
+      belongs_to :painter
+
+      filter :testowy, apply: -> (records, value, options) {
+        records.where(category: value)
+      }
+    end
+
+    class PainterResource < JSONAPI::Resource
+      model_name 'Painter'
+      attributes :name
+      has_many :paintings
+
+      filter :name, apply: -> (records, value, options) {
+        records.where("name LIKE ?", value )
+      }
     end
 
     class PersonResource < PersonResource; end

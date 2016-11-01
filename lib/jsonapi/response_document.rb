@@ -98,6 +98,7 @@ module JSONAPI
     end
 
     def results_to_hash
+      
       if @operation_results.has_errors?
         { errors: @operation_results.all_errors }
       else
@@ -126,7 +127,6 @@ module JSONAPI
               resources.concat(result.resources)
             end
           end
-
           @serializer.serialize_to_hash(resources)
         end
       end

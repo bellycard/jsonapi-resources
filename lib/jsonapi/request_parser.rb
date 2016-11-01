@@ -3,7 +3,7 @@ require 'jsonapi/paginator'
 
 module JSONAPI
   class RequestParser
-    attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
+    attr_accessor :fields, :include, :filters, :included_filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id,
                   :include_directives, :params, :warnings, :server_error_callbacks
 
@@ -16,6 +16,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
+      @included_filters = {}
       @sort_criteria = nil
       @source_klass = nil
       @source_id = nil
@@ -212,7 +213,6 @@ module JSONAPI
 
     def parse_include_directives(raw_include)
       return unless raw_include
-
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
       end
@@ -247,13 +247,32 @@ module JSONAPI
       end
 
       filters.each do |key, value|
-        filter = unformat_key(key)
-        if @resource_klass._allowed_filter?(filter)
-          @filters[filter] = value
+        resource_name, filterer = key.to_s.split('.')
+        if filterer
+          parse_included_filter(resource_name, filterer, value)
         else
-          @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
+          parse_filter(key, value)
         end
       end
+    end
+
+    def parse_included_filter(resource_name, filterer, value)
+      resource_name = resource_name.to_sym
+      filterer = unformat_key(filterer)
+      resource_klass = @resource_klass._relationships[resource_name].try(:resource_klass)
+      return filter_not_allowed(filterer) unless resource_klass && resource_klass._allowed_filter?(filterer)
+      resource_name = unformat_key(resource_name)
+      @included_filters[resource_name] = Hash[filterer, value]
+    end
+
+    def parse_filter(key, value)
+      key = unformat_key(key)
+      return filter_not_allowed(key) unless @resource_klass._allowed_filter?(key)
+      @filters[key] = value
+    end
+
+    def filter_not_allowed(value)
+      @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(value).errors)
     end
 
     def set_default_filters
@@ -307,6 +326,7 @@ module JSONAPI
         @resource_klass,
         context: @context,
         filters: @filters,
+        included_filters: @included_filters,
         include_directives: @include_directives,
         sort_criteria: @sort_criteria,
         paginator: @paginator,

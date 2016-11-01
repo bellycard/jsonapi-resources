@@ -59,10 +59,12 @@ module JSONAPI
         records = records_for(relation_name)
 
         resource_klass = relationship.resource_klass
-
         records = resource_klass.apply_includes(records, options)
-
         filters = options.fetch(:filters, {})
+
+        included_filters = @options.fetch(:included_filters, {})
+        included_filters = included_filters.fetch(relation_name, {})
+        filters = filters.merge included_filters
         unless filters.nil? || filters.empty?
           records = resource_klass.apply_filters(records, filters, options)
         end

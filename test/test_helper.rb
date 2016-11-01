@@ -330,7 +330,7 @@ TestApp.routes.draw do
     namespace :v5 do
       jsonapi_resources :posts do
       end
-
+      jsonapi_resources :painters
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies

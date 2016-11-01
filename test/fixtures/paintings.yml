@@ -1,0 +1,23 @@
+painting_1:
+  id: 1
+  title: "Rejtan"
+  category: "historic"
+  painter_id: 2
+
+painting_2:
+  id: 2
+  title: "Stanczyk"
+  category: "fantasy"
+  painter_id: 2
+
+painting_3:
+  id: 3
+  title: "Macierzynstwo"
+  category: "pastel"
+  painter_id: 1
+
+painting_4:
+  id: 4
+  title: "Helenka"
+  category: "oil"
+  painter_id: 1

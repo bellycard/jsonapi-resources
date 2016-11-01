@@ -65,20 +65,21 @@ module JSONAPI
 
     def find
       filters = params[:filters]
+      included_filters = params[:included_filters]
       include_directives = params[:include_directives]
       sort_criteria = params.fetch(:sort_criteria, [])
       paginator = params[:paginator]
       fields = params[:fields]
-
       verified_filters = resource_klass.verify_filters(filters, context)
+      verified_included_filters = get_verified_included_filters(included_filters, context)
       find_options = {
         context: context,
         include_directives: include_directives,
+        included_filters: verified_included_filters,
         sort_criteria: sort_criteria,
         paginator: paginator,
-        fields: fields
+        fields: fields,
       }
-
       resource_records = if params[:cache_serializer]
         resource_klass.find_serialized_with_caching(verified_filters,
                                                     params[:cache_serializer],
@@ -102,12 +103,21 @@ module JSONAPI
       if JSONAPI.configuration.top_level_links_include_pagination && paginator
         page_options[:pagination_params] = paginator.links_page_params(page_options)
       end
-
       return JSONAPI::ResourcesOperationResult.new(:ok, resource_records, page_options)
+    end
+
+    def get_verified_included_filters(filters, context)
+      return nil unless filters
+      filters.select do |key, value|
+        included_resource_klass = @resource_klass._relationships[key].try(:resource_klass)
+        included_resource_klass.verify_filters(value, context)
+      end
     end
 
     def show
       include_directives = params[:include_directives]
+      included_filters = params[:included_filters]
+      verified_included_filters = get_verified_included_filters(included_filters, context)
       fields = params[:fields]
       id = params[:id]
 
@@ -116,6 +126,7 @@ module JSONAPI
       find_options = {
         context: context,
         include_directives: include_directives,
+        included_filters: verified_included_filters,
         fields: fields
       }
 
@@ -131,6 +142,7 @@ module JSONAPI
     end
 
     def show_relationship
+      
       parent_key = params[:parent_key]
       relationship_type = params[:relationship_type].to_sym
 
@@ -156,6 +168,7 @@ module JSONAPI
     end
 
     def show_related_resources
+
       source_klass = params[:source_klass]
       source_id = params[:source_id]
       relationship_type = params[:relationship_type]
