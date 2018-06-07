@@ -23,6 +23,7 @@ require 'rails/test_help'
 require 'minitest/mock'
 require 'jsonapi-resources'
 require 'pry'
+require 'bullet'
 
 require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
@@ -58,6 +59,11 @@ class TestApp < Rails::Application
     config.active_support.halt_callback_chains_on_return_false = false
     config.active_record.time_zone_aware_types = [:time, :datetime]
     config.active_record.belongs_to_required_by_default = false
+  end
+
+  config.after_initialize do
+    Bullet.enable = true
+    Bullet.bullet_logger = true
   end
 end
 
