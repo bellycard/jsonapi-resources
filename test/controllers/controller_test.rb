@@ -3134,7 +3134,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
-    assert_equal 132, json_response['included'].size
+    assert_equal 135, json_response['included'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
   ensure

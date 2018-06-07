@@ -28,6 +28,7 @@ require File.expand_path('../helpers/value_matchers', __FILE__)
 require File.expand_path('../helpers/assertions', __FILE__)
 require File.expand_path('../helpers/functional_helpers', __FILE__)
 require File.expand_path('../helpers/configuration_helpers', __FILE__)
+require File.expand_path('../helpers/query_counter', __FILE__)
 
 Rails.env = 'test'
 
