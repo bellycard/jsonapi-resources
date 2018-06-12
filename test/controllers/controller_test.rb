@@ -483,7 +483,7 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_record_count = true
     assert_cacheable_get :show, params: { id: Post.first.id }
     assert_response :success
-    assert_equal json_response['meta'], nil
+    assert_nil json_response['meta']
   ensure
     JSONAPI.configuration.top_level_meta_include_record_count = false
   end
@@ -492,7 +492,7 @@ class PostsControllerTest < ActionController::TestCase
     JSONAPI.configuration.top_level_meta_include_page_count = true
     assert_cacheable_get :show, params: { id: Post.first.id }
     assert_response :success
-    assert_equal json_response['meta'], nil
+    assert_nil json_response['meta']
   ensure
     JSONAPI.configuration.top_level_meta_include_page_count = false
   end
@@ -596,7 +596,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /id is not allowed/, response.body
-    assert_equal nil,response.location
+    assert_nil response.location
   end
 
   def test_create_link_to_missing_object
@@ -618,7 +618,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity
     # TODO: check if this validation is working
     assert_match /author - can't be blank/, response.body
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_extra_param
@@ -640,7 +640,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /asdfg is not allowed/, response.body
-    assert_equal nil,response.location
+    assert_nil response.location
   end
 
   def test_create_extra_param_allow_extra_params
@@ -707,7 +707,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal "/data/attributes/title", json_response['errors'][1]['source']['pointer']
     assert_equal "is too long (maximum is 35 characters)", json_response['errors'][1]['title']
     assert_equal "title - is too long (maximum is 35 characters)", json_response['errors'][1]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_multiple
@@ -760,7 +760,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, data, is missing./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_wrong_type
@@ -781,7 +781,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /posts_spelled_wrong is not a valid resource./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_missing_type
@@ -801,7 +801,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /The required parameter, type, is missing./, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_unpermitted_attributes
@@ -822,7 +822,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :bad_request
     assert_match /subject/, json_response['errors'][0]['detail']
-    assert_equal nil, response.location
+    assert_nil response.location
   end
 
   def test_create_simple_unpermitted_attributes_allow_extra_params
@@ -1086,7 +1086,7 @@ class PostsControllerTest < ActionController::TestCase
     assert_response :success
     assert json_response['data'].is_a?(Hash)
     assert_equal '3', json_response['data']['relationships']['author']['data']['id']
-    assert_equal nil, json_response['data']['relationships']['section']['data']
+    assert_nil json_response['data']['relationships']['section']['data']
     assert_equal 'A great new Post', json_response['data']['attributes']['title']
     assert_equal 'AAAA', json_response['data']['attributes']['body']
     assert matches_array?([],
@@ -1116,7 +1116,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :no_content
     post_object = Post.find(4)
-    assert_equal nil, post_object.section_id
+    assert_nil post_object.section_id
   end
 
   def test_update_relationship_to_one_invalid_links_hash_keys_ids
@@ -1233,7 +1233,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: {type: 'sections', id: nil}}
 
     assert_response :no_content
-    assert_equal nil, post_object.reload.section_id
+    assert_nil post_object.reload.section_id
   end
 
   def test_update_relationship_to_one_data_nil
@@ -1246,7 +1246,7 @@ class PostsControllerTest < ActionController::TestCase
     put :update_relationship, params: {post_id: 3, relationship: 'section', data: nil}
 
     assert_response :no_content
-    assert_equal nil, post_object.reload.section_id
+    assert_nil post_object.reload.section_id
   end
 
   def test_remove_relationship_to_one
@@ -1260,7 +1260,7 @@ class PostsControllerTest < ActionController::TestCase
 
     assert_response :no_content
     post_object = Post.find(3)
-    assert_equal nil, post_object.section_id
+    assert_nil post_object.section_id
   end
 
   def test_update_relationship_to_one_singular_param
@@ -2546,7 +2546,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal '1', json_response['data'][0]['id']
     assert_equal 'authors', json_response['data'][0]['type']
     assert_equal 'Joe Author', json_response['data'][0]['attributes']['name']
-    assert_equal nil, json_response['data'][0]['attributes']['email']
+    assert_nil json_response['data'][0]['attributes']['email']
   end
 
   def test_show_person_as_author
@@ -2555,7 +2555,7 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
     assert_equal '1', json_response['data']['id']
     assert_equal 'authors', json_response['data']['type']
     assert_equal 'Joe Author', json_response['data']['attributes']['name']
-    assert_equal nil, json_response['data']['attributes']['email']
+    assert_nil json_response['data']['attributes']['email']
   end
 
   def test_get_person_as_author_by_name_filter
@@ -3134,7 +3134,7 @@ class Api::V2::BooksControllerTest < ActionController::TestCase
     end
     assert_response :success
     assert_equal 12, json_response['data'].size
-    assert_equal 132, json_response['included'].size
+    assert_equal 135, json_response['included'].size
     assert_equal 'Book 0', json_response['data'][0]['attributes']['title']
     assert_equal 901, json_response['meta']['record-count']
   ensure

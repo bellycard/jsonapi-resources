@@ -60,6 +60,8 @@ module JSONAPI
 
         resource_klass = relationship.resource_klass
 
+        records = resource_klass.apply_includes(records, options)
+
         filters = options.fetch(:filters, {})
         unless filters.nil? || filters.empty?
           records = resource_klass.apply_filters(records, filters, options)

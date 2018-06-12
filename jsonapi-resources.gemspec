@@ -26,6 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'simplecov'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'concurrent-ruby-ext'
+  spec.add_development_dependency 'bullet'
   spec.add_dependency 'activerecord', '>= 4.1'
   spec.add_dependency 'railties', '>= 4.1'
   spec.add_dependency 'concurrent-ruby'
