@@ -221,11 +221,11 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_filters_with_non_valid_relationship_for_included_filter
     setup_request
-    @request.parse_filters({ "babies.first_marriage_children" => "Tom" })
-    assert_equal(@request.filters, {})
-    assert_equal(@request.included_filters, {})
-    assert_equal(@request.errors.count, 1)
-    assert_equal(@request.errors.first.title, "Filter not allowed")
+    @request.parse_filters('babies.first_marriage_children' => 'Tom')
+    assert_equal({}, @request.filters, 'Filters should be empty')
+    assert_equal({}, @request.included_filters, 'Included filters should be empty')
+    assert_equal(1, @request.errors.count)
+    assert_equal('Filter not allowed', @request.errors.first.title)
   end
 
   def test_parse_filters_with_non_valid_included_filter

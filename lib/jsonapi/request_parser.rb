@@ -16,7 +16,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
-      @included_filters = {}
+      @included_filters = Hash.new { |h, k| h[k] = {} } # Hash which sets hash[k] to empty hash on miss.
       @sort_criteria = nil
       @source_klass = nil
       @source_id = nil
@@ -77,6 +77,8 @@ module JSONAPI
     def setup_show_action(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+
       @id = params[:id]
       add_show_operation
     end
@@ -247,32 +249,17 @@ module JSONAPI
       end
 
       filters.each do |key, value|
-        resource_name, filterer = key.to_s.split('.')
-        if filterer
-          parse_included_filter(resource_name, filterer, value)
+        filter_method, included_resource_name = key.to_s.split('.').map {|k| unformat_key(k) }.reverse
+
+        filtering_klass = included_resource_name ? resource_klass._relationship(included_resource_name)&.resource_klass : resource_klass
+        return @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter_method).errors) unless filtering_klass&._allowed_filter?(filter_method)
+
+        if included_resource_name
+          @included_filters[included_resource_name].merge!(Hash[filter_method, value])
         else
-          parse_filter(key, value)
+          @filters[filter_method] = value
         end
       end
-    end
-
-    def parse_included_filter(resource_name, filterer, value)
-      resource_name = resource_name.to_sym
-      filterer = unformat_key(filterer)
-      resource_klass = @resource_klass._relationships[resource_name].try(:resource_klass)
-      return filter_not_allowed(filterer) unless resource_klass && resource_klass._allowed_filter?(filterer)
-      resource_name = unformat_key(resource_name)
-      @included_filters[resource_name] = Hash[filterer, value]
-    end
-
-    def parse_filter(key, value)
-      key = unformat_key(key)
-      return filter_not_allowed(key) unless @resource_klass._allowed_filter?(key)
-      @filters[key] = value
-    end
-
-    def filter_not_allowed(value)
-      @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(value).errors)
     end
 
     def set_default_filters
@@ -339,6 +326,7 @@ module JSONAPI
         @resource_klass,
         context: @context,
         id: @id,
+        included_filters: @included_filters,
         include_directives: @include_directives,
         fields: @fields
       )

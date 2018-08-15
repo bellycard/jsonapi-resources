@@ -106,14 +106,6 @@ module JSONAPI
       return JSONAPI::ResourcesOperationResult.new(:ok, resource_records, page_options)
     end
 
-    def get_verified_included_filters(filters, context)
-      return nil unless filters
-      filters.select do |key, value|
-        included_resource_klass = @resource_klass._relationships[key].try(:resource_klass)
-        included_resource_klass.verify_filters(value, context)
-      end
-    end
-
     def show
       include_directives = params[:include_directives]
       included_filters = params[:included_filters]
@@ -168,7 +160,6 @@ module JSONAPI
     end
 
     def show_related_resources
-
       source_klass = params[:source_klass]
       source_id = params[:source_id]
       relationship_type = params[:relationship_type]
@@ -336,6 +327,16 @@ module JSONAPI
       result = resource.remove_to_one_link(relationship_type)
 
       return JSONAPI::OperationResult.new(result == :completed ? :no_content : :accepted)
+    end
+
+    private
+
+    def get_verified_included_filters(filters, context)
+      return nil unless filters
+      filters.select do |key, value|
+        included_resource_klass = @resource_klass._relationships[key].try(:resource_klass)
+        included_resource_klass.verify_filters(value, context)
+      end
     end
   end
 end

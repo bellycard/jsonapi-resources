@@ -1093,7 +1093,7 @@ module JSONAPI
           cache_ids = pluck_arel_attributes(records, t[_primary_key], t[_cache_field])
           resources = CachedResourceFragment.fetch_fragments(self, serializer, options[:context], cache_ids)
         else
-          resources = resources_for(records, options[:context]).map{|r| [r.id, r] }.to_h
+          resources = resources_for(records, options).map{|r| [r.id, r] }.to_h
         end
 
         preload_included_fragments(resources, records, serializer, options)
@@ -1269,7 +1269,7 @@ module JSONAPI
         quoted_attrs = attrs.map do |attr|
           quoted_table = conn.quote_table_name(attr.relation.table_alias || attr.relation.name)
           quoted_column = conn.quote_column_name(attr.name)
-          "#{quoted_table}.#{quoted_column}"
+          Arel.sql("#{quoted_table}.#{quoted_column}")
         end
         relation.pluck(*quoted_attrs)
       end

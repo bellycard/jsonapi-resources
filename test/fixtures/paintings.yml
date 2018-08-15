@@ -21,3 +21,15 @@ painting_4:
   title: "Helenka"
   category: "oil"
   painter_id: 1
+
+painting_5:
+  id: 5
+  title: "Motherhood"
+  category: "oil"
+  painter_id: 1
+
+painting_6:
+  id: 6
+  title: "Motherhood"
+  category: "fake"
+  painter_id: 1

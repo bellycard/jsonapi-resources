@@ -1629,9 +1629,8 @@ module Api
       attributes :title, :category
       belongs_to :painter
 
-      filter :testowy, apply: -> (records, value, options) {
-        records.where(category: value)
-      }
+      filter :title
+      filter :category
     end
 
     class PainterResource < JSONAPI::Resource
