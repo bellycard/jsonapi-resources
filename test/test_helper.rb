@@ -53,6 +53,7 @@ class TestApp < Rails::Application
 
   ActiveRecord::Schema.verbose = false
   config.active_record.schema_format = :none
+  config.active_record.sqlite3.represent_boolean_as_integer = true
   config.active_support.test_order = :random
 
   if Rails::VERSION::MAJOR >= 5
@@ -330,7 +331,7 @@ TestApp.routes.draw do
     namespace :v5 do
       jsonapi_resources :posts do
       end
-
+      jsonapi_resources :painters
       jsonapi_resources :authors
       jsonapi_resources :expense_entries
       jsonapi_resources :iso_currencies

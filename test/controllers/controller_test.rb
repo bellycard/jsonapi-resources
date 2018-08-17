@@ -2538,6 +2538,50 @@ class BooksControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V5::PaintersControllerTest < ActionController::TestCase
+  def test_index_with_included_resources_with_filters
+    # There are two painters, but by filtering the included relationship, the
+    # painters are limited due to the join, thus only the painter with oil
+    # paintings is returned.
+    get :index, params: { include: 'paintings', filter: { 'paintings.category' => 'oil' } }
+    assert_response :success
+    assert_equal 1, json_response['data'].size, 'Size of data is wrong'
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal 2, json_response['included'].size, 'Size of included data is wrong'
+    assert_equal '4', json_response['included'][0]['id']
+    assert_equal '5', json_response['included'][1]['id']
+  end
+
+  def test_index_with_filters_and_included_resources_with_filters
+    get :index, params: { include: 'paintings', filter: { 'name' => 'Wyspianski', 'paintings.category' => 'oil' } }
+
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal 2, json_response['included'].size
+    assert_equal '4', json_response['included'][0]['id']
+  end
+
+  def test_index_with_filters_and_included_resources_with_multiple_filters
+    # Painting 5 is the genuine, but painting 6 is a fake. Verify that multiple nested filters are merged and only the oil painting is returned.
+    get :index, params: { include: 'paintings', filter: { 'name' => 'Wyspianski', 'paintings.category' => 'oil', 'paintings.title' => 'Motherhood' } }
+
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal 1, json_response['included'].size
+    assert_equal '5', json_response['included'][0]['id']
+  end
+
+  def test_show_with_filters_and_included_resources_with_filters
+    get :show, params: { id: 1, include: 'paintings', filter: { 'paintings.category' => 'oil' } }
+    assert_response :success
+    assert_equal '1', json_response['data']['id']
+    assert_equal 2, json_response['included'].size
+    assert_equal '4', json_response['included'][0]['id']
+  end
+end
+
 class Api::V5::AuthorsControllerTest < ActionController::TestCase
   def test_get_person_as_author
     assert_cacheable_get :index, params: {filter: {id: '1'}}
@@ -2732,7 +2776,6 @@ class BreedsControllerTest < ActionController::TestCase
     assert_response :no_content
     assert_equal initial_count - 1, $breed_data.breeds.keys.count
   end
-
 end
 
 class Api::V2::PreferencesControllerTest < ActionController::TestCase

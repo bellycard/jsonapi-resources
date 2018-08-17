@@ -3,7 +3,7 @@ require 'jsonapi/paginator'
 
 module JSONAPI
   class RequestParser
-    attr_accessor :fields, :include, :filters, :sort_criteria, :errors, :operations,
+    attr_accessor :fields, :include, :filters, :included_filters, :sort_criteria, :errors, :operations,
                   :resource_klass, :context, :paginator, :source_klass, :source_id,
                   :include_directives, :params, :warnings, :server_error_callbacks
 
@@ -16,6 +16,7 @@ module JSONAPI
       @operations = []
       @fields = {}
       @filters = {}
+      @included_filters = Hash.new { |h, k| h[k] = {} } # Hash which sets hash[k] to empty hash on miss.
       @sort_criteria = nil
       @source_klass = nil
       @source_id = nil
@@ -76,6 +77,8 @@ module JSONAPI
     def setup_show_action(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+
       @id = params[:id]
       add_show_operation
     end
@@ -212,7 +215,6 @@ module JSONAPI
 
     def parse_include_directives(raw_include)
       return unless raw_include
-
       unless JSONAPI.configuration.allow_include
         fail JSONAPI::Exceptions::ParametersNotAllowed.new([:include])
       end
@@ -247,11 +249,15 @@ module JSONAPI
       end
 
       filters.each do |key, value|
-        filter = unformat_key(key)
-        if @resource_klass._allowed_filter?(filter)
-          @filters[filter] = value
+        filter_method, included_resource_name = key.to_s.split('.').map {|k| unformat_key(k) }.reverse
+
+        filtering_klass = included_resource_name ? resource_klass._relationship(included_resource_name)&.resource_klass : resource_klass
+        return @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter_method).errors) unless filtering_klass&._allowed_filter?(filter_method)
+
+        if included_resource_name
+          @included_filters[included_resource_name].merge!(Hash[filter_method, value])
         else
-          @errors.concat(JSONAPI::Exceptions::FilterNotAllowed.new(filter).errors)
+          @filters[filter_method] = value
         end
       end
     end
@@ -307,6 +313,7 @@ module JSONAPI
         @resource_klass,
         context: @context,
         filters: @filters,
+        included_filters: @included_filters,
         include_directives: @include_directives,
         sort_criteria: @sort_criteria,
         paginator: @paginator,
@@ -319,6 +326,7 @@ module JSONAPI
         @resource_klass,
         context: @context,
         id: @id,
+        included_filters: @included_filters,
         include_directives: @include_directives,
         fields: @fields
       )

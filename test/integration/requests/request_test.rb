@@ -605,6 +605,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   # end
 
   def test_query_count_related_resources
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
     counter = QueryCounter.new
     assert_equal 0, counter.query_count
     ActiveSupport::Notifications.subscribe('sql.active_record', counter)
@@ -619,6 +621,8 @@ class RequestTest < ActionDispatch::IntegrationTest
   end
 
   def test_query_count_related_resources_with_includes
+    Api::V2::BookResource.paginator :offset
+    Api::V2::BookCommentResource.paginator :offset
     counter = QueryCounter.new
     assert_equal 0, counter.query_count
     ActiveSupport::Notifications.subscribe('sql.active_record', counter)

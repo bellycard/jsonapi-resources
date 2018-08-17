@@ -62,11 +62,9 @@ module JSONAPI
 
     def process_request
       return unless verify_accept_header
-
       @request = JSONAPI::RequestParser.new(params, context: context,
                                             key_formatter: key_formatter,
                                             server_error_callbacks: (self.class.server_error_callbacks || []))
-
       unless @request.errors.empty?
         render_errors(@request.errors)
       else
@@ -118,6 +116,7 @@ module JSONAPI
     end
 
     def resource_serializer
+
       @resource_serializer ||= resource_serializer_klass.new(
         resource_klass,
         include_directives: @request ? @request.include_directives : nil,
@@ -222,9 +221,10 @@ module JSONAPI
     end
 
     def render_results(operation_results)
+      
       response_doc = create_response_document(operation_results)
       content = response_doc.contents
-
+      
       render_options = {}
       if operation_results.has_errors?
         render_options[:json] = content
@@ -246,6 +246,7 @@ module JSONAPI
     end
 
     def create_response_document(operation_results)
+      
       JSONAPI::ResponseDocument.new(
         operation_results,
         operation_results.has_errors? ? nil : resource_serializer,

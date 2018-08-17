@@ -4,7 +4,6 @@ module JSONAPI
     def initialize(transaction: lambda { |&block| block.yield },
                    rollback: lambda { },
                    server_error_callbacks: [])
-
       @transaction = transaction
       @rollback = rollback
       @server_error_callbacks = server_error_callbacks
@@ -27,6 +26,7 @@ module JSONAPI
         operations_links = {}
         operations.each do |operation|
           results.add_result(process_operation(operation))
+
           rollback(transactional) if results.has_errors?
         end
         results.meta = operations_meta

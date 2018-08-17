@@ -6,8 +6,9 @@ class CatResource < JSONAPI::Resource
 
   has_one :mother, class_name: 'Cat'
   has_one :father, class_name: 'Cat'
+  has_many :children, class_name: 'Cat'
 
-  filters :name
+  filters :name, :first_marriage_children
 
   def self.sortable_fields(context)
     super(context) << :"mother.name"
@@ -208,6 +209,40 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert_equal(@request.filters, {})
     assert_equal(@request.errors, [])
     assert_equal(@request.sort_criteria, [{:field=>"mother.name", :direction=>:desc}])
+  end
+
+  def test_parse_filters_with_valid_included_filter
+    setup_request
+    @request.parse_filters({ "children.first_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {})
+    assert_equal(@request.included_filters, { children: { first_marriage_children: "Tom" } })
+    assert_equal(@request.errors, [])
+  end
+
+  def test_parse_filters_with_non_valid_relationship_for_included_filter
+    setup_request
+    @request.parse_filters('babies.first_marriage_children' => 'Tom')
+    assert_equal({}, @request.filters, 'Filters should be empty')
+    assert_equal({}, @request.included_filters, 'Included filters should be empty')
+    assert_equal(1, @request.errors.count)
+    assert_equal('Filter not allowed', @request.errors.first.title)
+  end
+
+  def test_parse_filters_with_non_valid_included_filter
+    setup_request
+    @request.parse_filters({ "children.second_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {})
+    assert_equal(@request.included_filters, {})
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Filter not allowed")
+  end
+
+  def test_parse_filters_with_valid_filter_and_included_filter
+    setup_request
+    @request.parse_filters({ name: "Whiskers", "children.first_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {name: "Whiskers"})
+    assert_equal(@request.included_filters, { children: { first_marriage_children: "Tom" } })
+    assert_equal(@request.errors, [])
   end
 
   private

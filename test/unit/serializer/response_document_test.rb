@@ -44,7 +44,6 @@ class ResponseDocumentTest < ActionDispatch::IntegrationTest
 
     op = JSONAPI::OperationDispatcher.new()
     operation_results = op.process(operations)
-
     response_doc = create_response_document(operation_results, PostResource)
 
     assert_equal :ok, response_doc.status
