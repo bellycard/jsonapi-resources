@@ -20,9 +20,8 @@ module JSONAPI
                                        :remove_to_one_link,
                                        :replace_fields
 
-    def initialize(model, context, options = {})
+    def initialize(model, context)
       @model = model
-      @options = options
       @context = context
       @reload_needed = false
       @changing = false
@@ -454,7 +453,7 @@ module JSONAPI
       def resource_for(type)
         type = type.underscore
         type_with_module = type.include?('/') ? type : module_path + type
-     
+
         resource_name = _resource_name_from_type(type_with_module)
         resource = resource_name.safe_constantize if resource_name
         if resource.nil?
@@ -632,6 +631,16 @@ module JSONAPI
         end
       end
 
+      def apply_includes(records, options = {}, resource_klass = self)
+        include_directives = options[:include_directives]
+        if include_directives
+          model_includes = resolve_relationship_names_to_relations(resource_klass, include_directives.model_includes, options)
+          records = records.includes(model_includes)
+        end
+
+        records
+      end
+
       def apply_pagination(records, paginator, order_options)
         records = paginator.apply(records, order_options) if paginator
         records
@@ -681,31 +690,11 @@ module JSONAPI
         joins.join("\n")
       end
 
-      def apply_includes(records, options = {}, resource_klass = self)
-        include_directives = options[:include_directives]
-        if include_directives
-          model_includes = resolve_relationship_names_to_relations(resource_klass, include_directives.model_includes, options)
-          records = records.includes(model_includes)
-        end
-        
-        records
-      end
-
       def apply_filter(records, filter, value, options = {})
-        strategy = _allowed_filters.fetch(filter.to_sym, Hash.new)[:apply]
-        
-        strategy ? apply_strategy(records, strategy, value, options) : records.where(filter => value)
-      end
-
-      def apply_strategy(records, strategy, value, options = {})
-
-
-        if strategy.is_a?(Symbol) || strategy.is_a?(String)
-
-          send(strategy, records, value, options)
-        else
-          strategy.call(records, value, options)
-        end
+        strategy = _allowed_filters.dig(filter.to_sym, :apply)
+        return records.where(filter => value) unless strategy
+        return strategy.call(records, value, options) unless [Symbol, String].include?(strategy.class)
+        send(strategy, records, value, options)
       end
 
       def apply_filters(records, filters, options = {})
@@ -732,33 +721,20 @@ module JSONAPI
         records
       end
 
-      def apply_included_resources_filters(records, options = {})
-        filters = options[:included_filters]
-        if filters
-          filters.each do |filtered_resource, filter|
-            if _relationships.include?(filtered_resource) && !_relationships[filtered_resource].belongs_to? # no use filtering to_one relationships
-              resource_klass = _relationships[filtered_resource].resource_klass
-              records = apply_included_filter(records, filter, options, resource_klass)
-            end
-          end
+      def apply_included_resources_filters(records, filters, options = {})
+        return records unless filters
+        filters.reduce(records) do |memo, (filtered_resource, filter)|
+          next memo unless _relationship(filtered_resource)&.is_a?(JSONAPI::Relationship::ToMany)
+          filtering_resource = _relationship(filtered_resource).resource_klass
+          rel_records = filtering_resource.apply_filters(filtering_resource.records(options), filter, options).references(filtered_resource)
+          records.merge(rel_records)
         end
-
-        records
-      end
-
-      def apply_included_filter(records, filter, options, resource_klass)
-        testowy = resource_klass
-        records = apply_included_strategy(records, filter, options, resource_klass)
-      end
-
-      def apply_included_strategy(records, filter, options, resource_klass)
-        strategy = records
       end
 
       def filter_records(filters, options, records = records(options))
-
         records = apply_filters(records, filters, options)
-        apply_includes(records, options)
+        records = apply_includes(records, options)
+        apply_included_resources_filters(records, options[:included_filters], options)
       end
 
       def sort_records(records, order_options, context = {})
@@ -775,15 +751,13 @@ module JSONAPI
       end
 
       def find(filters, options = {})
-
-        resources_for(find_records(filters, options), options)
+        resources_for(find_records(filters, options), options[:context])
       end
 
-      def resources_for(records, options) # changed context to options
-        context = options[:context]
+      def resources_for(records, context)
         records.collect do |model|
           resource_class = self.resource_for_model(model)
-          resource_class.new(model, context, options)
+          resource_class.new(model, context)
         end
       end
 
@@ -1066,7 +1040,6 @@ module JSONAPI
         options = attrs.extract_options!
         options[:parent_resource] = self
         attrs.each do |relationship_name|
-
           check_reserved_relationship_name(relationship_name)
           check_duplicate_relationship_name(relationship_name)
           JSONAPI::RelationshipBuilder.new(klass, _model_class, options)
@@ -1093,7 +1066,7 @@ module JSONAPI
           cache_ids = pluck_arel_attributes(records, t[_primary_key], t[_cache_field])
           resources = CachedResourceFragment.fetch_fragments(self, serializer, options[:context], cache_ids)
         else
-          resources = resources_for(records, options).map{|r| [r.id, r] }.to_h
+          resources = resources_for(records, options[:context]).map{ |r| [r.id, r] }.to_h
         end
 
         preload_included_fragments(resources, records, serializer, options)
