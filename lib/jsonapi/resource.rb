@@ -727,7 +727,7 @@ module JSONAPI
           next memo unless _relationship(filtered_resource)&.is_a?(JSONAPI::Relationship::ToMany)
           filtering_resource = _relationship(filtered_resource).resource_klass
           rel_records = filtering_resource.apply_filters(filtering_resource.records(options), filter, options).references(filtered_resource)
-          records.merge(rel_records)
+          memo.merge(rel_records)
         end
       end
 
