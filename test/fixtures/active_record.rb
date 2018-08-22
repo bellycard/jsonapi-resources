@@ -1627,7 +1627,7 @@ module Api
     class PaintingResource < JSONAPI::Resource
       model_name 'Painting'
       attributes :title, :category
-      belongs_to :painter
+      has_one :painter
 
       filter :title
       filter :category

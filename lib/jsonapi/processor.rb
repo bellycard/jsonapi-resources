@@ -71,7 +71,7 @@ module JSONAPI
       paginator = params[:paginator]
       fields = params[:fields]
       verified_filters = resource_klass.verify_filters(filters, context)
-      verified_included_filters = get_verified_included_filters(included_filters, context)
+      verified_included_filters = verify_included_filters(included_filters, context)
       find_options = {
         context: context,
         include_directives: include_directives,
@@ -109,7 +109,7 @@ module JSONAPI
     def show
       include_directives = params[:include_directives]
       included_filters = params[:included_filters]
-      verified_included_filters = get_verified_included_filters(included_filters, context)
+      verified_included_filters = verify_included_filters(included_filters, context)
       fields = params[:fields]
       id = params[:id]
 
@@ -331,11 +331,12 @@ module JSONAPI
 
     private
 
-    def get_verified_included_filters(filters, context)
+    def verify_included_filters(filters, context)
       return nil unless filters
-      filters.select do |key, value|
-        included_resource_klass = @resource_klass._relationships[key].try(:resource_klass)
-        included_resource_klass.verify_filters(value, context)
+      filters.reduce({}) do |memo, (relationship, filter)|
+        included_resource_klass = @resource_klass._relationship(relationship)&.resource_klass
+        memo[relationship] = included_resource_klass.verify_filters(filter, context)
+        memo
       end
     end
   end
