@@ -1256,7 +1256,7 @@ module JSONAPI
         quoted_attrs = attrs.map do |attr|
           quoted_table = conn.quote_table_name(attr.relation.table_alias || attr.relation.name)
           quoted_column = conn.quote_column_name(attr.name)
-          "#{quoted_table}.#{quoted_column}"
+          Arel.sql("#{quoted_table}.#{quoted_column}")
         end
         relation.pluck(*quoted_attrs)
       end
