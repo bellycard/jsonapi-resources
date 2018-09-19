@@ -51,6 +51,7 @@ class TestApp < Rails::Application
 
   ActiveRecord::Schema.verbose = false
   config.active_record.schema_format = :none
+  config.active_record.sqlite3.represent_boolean_as_integer = true
   config.active_support.test_order = :random
 
   if Rails::VERSION::MAJOR >= 5
