@@ -732,9 +732,27 @@ module JSONAPI
         records
       end
 
+      def apply_included_resources_filters(records, options = {})
+        include_directives = options[:include_directives]
+        return records unless include_directives
+        related_directives = include_directives.include_directives.fetch(:include_related)
+        related_directives.reduce(records) do |memo, (relationship_name, config)|
+          relationship = _relationship(relationship_name)
+          next memo unless relationship && relationship.is_a?(JSONAPI::Relationship::ToMany)
+          filtering_resource = relationship.resource_klass
+
+          filters = config[:include_filters]
+          next memo unless filters
+
+          rel_records = filtering_resource.apply_filters(filtering_resource.records(options), filters, options).references(relationship_name)
+          memo.merge(rel_records)
+        end
+      end
+
       def filter_records(filters, options, records = records(options))
         records = apply_filters(records, filters, options)
-        apply_includes(records, options)
+        records = apply_includes(records, options)
+        apply_included_resources_filters(records, options)
       end
 
       def sort_records(records, order_options, context = {})

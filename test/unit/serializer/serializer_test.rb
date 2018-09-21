@@ -251,6 +251,46 @@ class SerializerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  def test_serializer_filtered_include
+    painter = Painter.find(1)
+    include_directives = JSONAPI::IncludeDirectives.new(Api::V5::PainterResource, ['paintings'])
+    include_directives.merge_filter('paintings', category: ['oil'])
+    serialized = JSONAPI::ResourceSerializer.new(
+      Api::V5::PainterResource,
+      include_directives: include_directives,
+      fields: {painters: [:id], paintings: [:id]}
+    ).serialize_to_hash(Api::V5::PainterResource.new(painter, nil))
+
+    assert_hash_equals(
+      {
+        data: {
+          type: 'painters',
+          id: '1',
+          links: {
+            self: '/api/v5/painters/1'
+          },
+        },
+        included: [
+          {
+            type: 'paintings',
+            id: '4',
+            links: {
+              self: '/api/v5/paintings/4'
+            }
+          },
+          {
+            type: 'paintings',
+            id: '5',
+            links: {
+              self: '/api/v5/paintings/5'
+            }
+          }
+        ]
+      },
+      serialized
+    )
+  end
+
   def test_serializer_key_format
     serialized = JSONAPI::ResourceSerializer.new(
       PostResource,

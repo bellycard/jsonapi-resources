@@ -76,6 +76,8 @@ module JSONAPI
     def setup_show_action(params)
       parse_fields(params[:fields])
       parse_include_directives(params[:include])
+      parse_filters(params[:filter])
+
       @id = params[:id]
       add_show_operation
     end
@@ -232,7 +234,7 @@ module JSONAPI
         @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, result)
       rescue JSONAPI::Exceptions::InvalidInclude => e
         @errors.concat(e.errors)
-        @include_directives = {}
+        @include_directives = JSONAPI::IncludeDirectives.new(@resource_klass, [])
       end
     end
 
@@ -249,11 +251,34 @@ module JSONAPI
       end
 
       filters.each do |key, value|
-        filter = unformat_key(key)
-        if @resource_klass._allowed_filter?(filter)
-          @filters[filter] = value
+        filter_method, included_resource_name =
+          key.to_s.split('.').map { |k| unformat_key(k) }.reverse
+
+        if included_resource_name
+          relationship = resource_klass._relationship(included_resource_name || '')
+
+
+          unless relationship
+            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+          end
+
+          unless  relationship.resource_klass._allowed_filter?(filter_method)
+            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+          end
+
+          unless @include_directives.model_includes.include?(relationship.name.to_sym)
+            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+          end
+
+          verified_filter = relationship.resource_klass.verify_filters(filter_method => value)
+          @include_directives.merge_filter(relationship.name, verified_filter)
+          next
         else
-          fail JSONAPI::Exceptions::FilterNotAllowed.new(filter)
+          unless resource_klass._allowed_filter?(filter_method)
+            return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
+          end
+
+          @filters[filter_method] = value
         end
       end
     end

@@ -40,6 +40,16 @@ module JSONAPI
       delve_paths(get_includes(@include_directives_hash, false))
     end
 
+    def merge_filter(relation, filter)
+      config = include_config(relation.to_sym)
+      config[:include_filters] ||= {}
+      config[:include_filters].merge!(filter)
+    end
+
+    def include_config(relation)
+      @include_directives_hash[:include_related][relation]
+    end
+
     private
 
     def get_related(current_path)

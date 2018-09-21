@@ -1,0 +1,9 @@
+collector_1:
+  id: 1
+  name: "Alice"
+  painting_id: 4
+
+collector_2:
+  id: 2
+  name: "Bob"
+  painting_id: 4

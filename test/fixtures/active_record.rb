@@ -310,6 +310,24 @@ ActiveRecord::Schema.define do
     t.string :name
   end
 
+  create_table :painters, force: true do |t|
+    t.string :name
+
+    t.timestamps null: false
+  end
+
+  create_table :paintings, force: true do |t|
+    t.string :title
+    t.string :category
+    t.belongs_to :painter
+
+    t.timestamps null: false
+  end
+
+  create_table :collectors, force: true do |t|
+    t.string :name
+    t.belongs_to :painting
+  end
   # special cases
 end
 
@@ -655,6 +673,18 @@ module Api
   end
 end
 
+class Painter < ActiveRecord::Base
+  has_many :paintings
+end
+
+class Painting < ActiveRecord::Base
+  belongs_to :painter
+  has_many :collectors
+end
+
+class Collector < ActiveRecord::Base
+  belongs_to :painting
+end
 ### CONTROLLERS
 class AuthorsController < JSONAPI::ResourceControllerMetal
 end
@@ -864,6 +894,9 @@ module Api
     end
 
     class IsoCurrenciesController < JSONAPI::ResourceController
+    end
+
+    class PaintersController < JSONAPI::ResourceController
     end
   end
 
@@ -1608,6 +1641,42 @@ module Api
 
     class AuthorDetailResource < JSONAPI::Resource
       attributes :author_stuff
+    end
+
+    class PaintingResource < JSONAPI::Resource
+      model_name 'Painting'
+      attributes :title, :category, :collector_roster
+      has_one :painter
+      has_many :collectors
+
+      filter :title
+      filter :category
+
+      def collector_roster
+        collectors.map(&:name)
+      end
+    end
+
+    class CollectorResource < JSONAPI::Resource
+      attributes :name
+      has_one :painting
+    end
+
+    class PainterResource < JSONAPI::Resource
+      model_name 'Painter'
+      attributes :name
+      has_many :paintings
+
+      filter :name, apply: lambda { |records, value, options|
+        records.where('name LIKE ?', value)
+      }
+
+      def records_for(relation_name)
+        records = super(relation_name)
+
+        return records unless relation_name == :paintings
+        records.includes(:collectors)
+      end
     end
 
     class PersonResource < PersonResource; end

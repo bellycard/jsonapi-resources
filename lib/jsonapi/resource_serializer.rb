@@ -287,6 +287,7 @@ module JSONAPI
         include_linkage = ia && ia[:include]
         include_linked_children = ia && !ia[:include_related].empty?
 
+        options = { filters: ia && ia[:include_filters] || {} }
         if field_set.include?(name)
           hash[format_key(name)] = link_object(source, relationship, include_linkage)
         end
@@ -298,7 +299,7 @@ module JSONAPI
           resources = if source.preloaded_fragments.has_key?(format_key(name))
             source.preloaded_fragments[format_key(name)].values
           else
-            [source.public_send(name)].flatten(1).compact
+            [source.public_send(name, options)].flatten(1).compact
           end
           resources.each do |resource|
             next if self_referential_and_already_in_source(resource)
@@ -410,7 +411,10 @@ module JSONAPI
           end
         end
       else
-        source.public_send(relationship.name).map do |value|
+        include_config = include_directives.include_config(relationship.name.to_sym) if include_directives
+        include_filters = include_config[:include_filters] if include_config
+        options = { filters: include_filters || {} }
+        source.public_send(relationship.name, options).map do |value|
           [relationship.type, value.id]
         end
       end

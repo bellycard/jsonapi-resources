@@ -6,8 +6,9 @@ class CatResource < JSONAPI::Resource
 
   has_one :mother, class_name: 'Cat'
   has_one :father, class_name: 'Cat'
+  has_many :children, class_name: 'Cat'
 
-  filters :name
+  filters :name, :first_marriage_children
 
   def self.sortable_fields(context)
     super(context) << :"mother.name"
@@ -176,10 +177,10 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
 
   def test_parse_filters_with_non_valid_filter
     setup_request
-    e = assert_raises JSONAPI::Exceptions::FilterNotAllowed do
-        @request.parse_filters({breed: 'Whiskers'}) # breed is not a set filter
-    end
-    assert_equal 'breed is not allowed.', e.errors[0].detail
+    @request.parse_filters({breed: 'Whiskers'}) # breed is not a set filter
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Filter not allowed")
+    assert_equal(@request.errors.first.detail, "breed is not allowed.")
   end
 
   def test_parse_filters_with_no_filters
@@ -211,6 +212,50 @@ class JSONAPIRequestTest < ActiveSupport::TestCase
     assert_equal(@request.filters, {})
     assert_equal(@request.errors, [])
     assert_equal(@request.sort_criteria, [{:field=>"mother.name", :direction=>:desc}])
+  end
+
+  def test_parse_filters_with_valid_included_filter
+    setup_request
+    @request.parse_include_directives('children')
+    @request.parse_filters({ "children.first_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {})
+    include_config = @request.include_directives.include_config(:children)
+    assert_equal(include_config[:include_filters],
+                 first_marriage_children: ['Tom'])
+
+    assert_equal(@request.errors, [])
+  end
+
+  def test_parse_filters_with_non_valid_relationship_for_included_filter
+    setup_request
+    @request.parse_include_directives('babies')
+    @request.parse_filters('babies.first_marriage_children' => 'Tom')
+    assert_equal({}, @request.filters, 'Filters should be empty')
+    include_config = @request.include_directives.include_config(:babies)
+    assert_nil(include_config)
+    assert_equal(2, @request.errors.count)
+    filter_error = @request.errors.find { |e| e.title == 'Filter not allowed' }
+    assert_equal('first_marriage_children is not allowed.', filter_error.detail)
+  end
+
+  def test_parse_filters_with_non_valid_included_filter
+    setup_request
+    @request.parse_filters({ "children.second_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {})
+    assert_nil(@request.include_directives)
+    assert_equal(@request.errors.count, 1)
+    assert_equal(@request.errors.first.title, "Filter not allowed")
+  end
+
+  def test_parse_filters_with_valid_filter_and_included_filter
+    setup_request
+    @request.parse_include_directives('children')
+    @request.parse_filters({ name: "Whiskers", "children.first_marriage_children" => "Tom" })
+    assert_equal(@request.filters, {name: "Whiskers"})
+    include_config = @request.include_directives.include_config(:children)
+    assert_equal(include_config[:include_filters],
+                 first_marriage_children: ['Tom'])
+    assert_equal(@request.errors, [])
   end
 
   private
