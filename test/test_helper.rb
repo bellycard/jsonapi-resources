@@ -293,6 +293,7 @@ TestApp.routes.draw do
 
       jsonapi_resource :preferences, except: [:create, :destroy]
 
+      jsonapi_resources :authors
       jsonapi_resources :books
       jsonapi_resources :book_comments
     end

@@ -197,7 +197,7 @@ module JSONAPI
           (paginator && paginator.class.requires_record_count) ||
           (JSONAPI.configuration.top_level_meta_include_page_count))
         related_resource_records = source_resource.public_send("records_for_" + relationship_type)
-        records = resource_klass.filter_records(filters, {},
+        records = resource_klass.filter_records(verified_filters, {},
                                                 related_resource_records)
 
         record_count = resource_klass.count_records(records)

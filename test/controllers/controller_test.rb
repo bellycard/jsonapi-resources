@@ -2718,6 +2718,26 @@ class Api::V5::AuthorsControllerTest < ActionController::TestCase
   end
 end
 
+class Api::V2::BooksControllerTest < ActionController::TestCase
+  def test_get_related_resources_with_filters
+    $test_user = Person.find(5)
+    original_config = JSONAPI.configuration.dup
+    JSONAPI.configuration.top_level_meta_include_record_count = true
+    JSONAPI.configuration.json_key_format = :dasherized_key
+    assert_cacheable_get :get_related_resources,
+                         params: {
+                           author_id: '1',
+                           relationship: 'books',
+                           source: 'api/v2/authors',
+                           filter: { fiction: 'true' }
+                         }
+    assert_response :success
+    assert_equal 1, json_response['meta']['record-count']
+  ensure
+    JSONAPI.configuration = original_config
+  end
+end
+
 class BreedsControllerTest < ActionController::TestCase
   # Note: Breed names go through the TitleValueFormatter
 

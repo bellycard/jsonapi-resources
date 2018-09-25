@@ -141,6 +141,7 @@ ActiveRecord::Schema.define do
     t.string :title
     t.string :isbn
     t.boolean :banned, default: false
+    t.boolean :fiction, default: false
     t.timestamps null: false
   end
 
@@ -1493,10 +1494,11 @@ module Api
     class PreferencesResource < PreferencesResource; end
     class PersonResource < PersonResource; end
     class PostResource < PostResource; end
+    class AuthorResource < AuthorResource; end
 
     class BookResource < JSONAPI::Resource
       attribute "title"
-      attributes :isbn, :banned
+      attributes :isbn, :banned, :fiction
 
       paginator :offset
 
@@ -1517,6 +1519,7 @@ module Api
 
       filters :book_comments
       filter :banned, apply: :apply_filter_banned
+      filter :fiction, apply: :apply_filter_fiction
 
       class << self
         def books
@@ -1549,6 +1552,9 @@ module Api
           end
         end
 
+        def apply_filter_fiction(records, value, _options)
+          records.where('books.fiction = ?', value[0] == 'true')
+        end
       end
     end
 
