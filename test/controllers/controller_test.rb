@@ -2601,6 +2601,16 @@ class Api::V5::PaintersControllerTest < ActionController::TestCase
     assert_equal '4', json_response['included'][0]['id']
   end
 
+  def test_index_with_filters_and_included_resources_with_filters_and_nested_include
+    get :index, params: { include: 'paintings,paintings.collectors', filter: { 'name' => 'Wyspianski', 'paintings.category' => 'oil' } }
+
+    assert_response :success
+    assert_equal 1, json_response['data'].size
+    assert_equal '1', json_response['data'][0]['id']
+    assert_equal 4, json_response['included'].size
+    assert_equal '4', json_response['included'][0]['id']
+  end
+
   def test_index_with_filters_and_included_resources_with_multiple_filters
     # Painting 5 is the genuine, but painting 6 is a fake. Verify that multiple nested filters are merged and only the oil painting is returned.
     get :index, params: { include: 'paintings', filter: { 'name' => 'Wyspianski', 'paintings.category' => 'oil', 'paintings.title' => 'Motherhood' } }

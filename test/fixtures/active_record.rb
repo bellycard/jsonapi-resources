@@ -1674,7 +1674,7 @@ module Api
       has_many :paintings
 
       filter :name, apply: lambda { |records, value, options|
-        records.where('name LIKE ?', value)
+        records.where("#{_model_class.table_name}.name LIKE ?", value)
       }
 
       def records_for(relation_name)
