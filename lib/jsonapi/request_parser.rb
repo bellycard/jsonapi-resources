@@ -265,10 +265,7 @@ module JSONAPI
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
-          # Supports only just-included or top-level of multiple-relationship includes, e.g.,
-          # ?include=parent,parent.child&filter[parent.arms]=3
-          filtered_relationship_included = @include_directives.model_includes.include?(relationship.name.to_sym) || @include_directives.model_includes.any? { |include| include.key?(relationship.name.to_sym) }
-          unless filtered_relationship_included
+          unless @include_directives.include_config(relationship.name.to_sym).present?
             return @errors.concat(Exceptions::FilterNotAllowed.new(filter_method).errors)
           end
 
