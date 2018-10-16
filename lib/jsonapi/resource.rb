@@ -741,6 +741,9 @@ module JSONAPI
           next memo unless relationship && relationship.is_a?(JSONAPI::Relationship::ToMany)
           filtering_resource = relationship.resource_klass
 
+          # Don't try to merge where clauses when relation isn't already being joined to query.
+          next memo unless config[:include_in_join]
+
           filters = config[:include_filters]
           next memo unless filters
 

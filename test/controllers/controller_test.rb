@@ -509,6 +509,22 @@ class PostsControllerTest < ActionController::TestCase
     assert_equal 2, json_response['included'].size
   end
 
+  def test_show_with_filtered_includes_when_not_eager_loaded
+    # tags are not eagerly loaded on a post but may still be filtered
+    get :show, params: { id: '1', include: 'tags', filter: { 'tags.name' => ['whiny'] } }
+    assert_response :success
+    assert_equal 1, json_response['included'].size
+  end
+
+  def test_show_with_filtered_includes_when_not_eager_loaded_and_all_filtered_out
+    get :show, params: { id: '1', include: 'tags', filter: { 'tags.name' => ['no-tag-with-this-name'] } }
+    assert_response :success
+    assert json_response['data'].is_a?(Hash)
+    assert_equal 'New post', json_response['data']['attributes']['title']
+    assert_equal 'A body!!!', json_response['data']['attributes']['body']
+    assert_nil json_response['included']
+  end
+
   def test_show_single_with_include_disallowed
     JSONAPI.configuration.allow_include = false
     assert_cacheable_get :show, params: {id: '1', include: 'comments'}
